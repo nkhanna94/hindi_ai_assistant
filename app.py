@@ -60,7 +60,7 @@ with st.expander("Face Detection (runs once when app starts or when you click)")
 # st.markdown("---")
 
 with st.container(border=True):
-    st.markdown("## Input")
+    st.markdown("### Provide Input")
     
     # Tabs for better organization
     tab1, tab2 = st.tabs(["📤 Upload Audio", "🎙️ Record Audio"])
@@ -192,4 +192,4 @@ with st.expander("ℹ️ About this Assistant", expanded=False):
         """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #6C584C;'>Crafted with ❤️ | Powered by Llama 3</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #6C584C;'>Built with ❤️ | Powered by Llama 3</p>", unsafe_allow_html=True)
