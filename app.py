@@ -1,24 +1,22 @@
 # app.py
 import streamlit as st
 from pathlib import Path
-import tempfile
-import time
 from record_audio import record_audio
 
-from stt import transcribe_file, transcribe_from_mic
+from stt import transcribe_file
 from response import generate_response
 from tts import speak_text
 from face_detection import check_face_and_show_preview
 from utils import save_uploaded_audio
 
-st.set_page_config(page_title="Hindi AI Assistant", layout="wide")
+st.set_page_config(page_title="सहायिकाAI", layout="centered")
 
 # --- Sidebar: chat history ---
 if "chats" not in st.session_state:
     st.session_state.chats = []  # list of dicts: {"user": "...", "assistant": "..."}
 
-st.sidebar.title("Chats")
-if st.sidebar.button("Clear chats"):
+st.sidebar.title("Chat History 📜")
+if st.sidebar.button("Clear chats 🗑️"):
     st.session_state.chats = []
 
 for i, chat in enumerate(reversed(st.session_state.chats)):
@@ -26,169 +24,172 @@ for i, chat in enumerate(reversed(st.session_state.chats)):
     st.sidebar.markdown(f"**Assistant:** {chat['assistant']}")
     st.sidebar.markdown("---")
 
-# --- Header / Face detection on initial load or when refreshed ---
-st.title("Hindi-speaking AI Assistant 🗣️🤖")
-st.write("Upload an audio file or record from mic. The assistant transcribes (Hindi), generates a response, and speaks it.")
+st.markdown(
+    """
+    <h1 style='text-align: center; font-family: "Noto Serif Devanagari", serif;'>
+        सहायिकाAI 🇮🇳
+    </h1>
+    """,
+    unsafe_allow_html=True
+)
+# st.write("I am your Hindi AI assistant. Please provide an audio file or record your voice.")
+st.markdown(
+    """
+    <p style='text-align: center;
+              font-size: 20px;
+              color: #6C584C;
+              font-style: italic;'>
+        I am your Hindi AI assistant. Please provide an audio file or record your voice.
+    </p>
+    """,
+    unsafe_allow_html=True
+)
 
+
+# --- Header / Face detection on initial load or when refreshed ---
 with st.expander("Face Detection (runs once when app starts or when you click)"):
     if st.button("Run face detection now"):
         detected, frame = check_face_and_show_preview()
         if detected:
-            st.success("User detected ✓")
-            # st.image(frame[:, :, ::-1], caption="Camera preview (BGR→RGB)", width=400)
+            st.success("User detected! 👋")
         else:
-            st.info("No user detected")
+            st.info("No user detected 😶")
     else:
         st.write("Click the button to run face detection (opens a small webcam window).")
 
-st.markdown("---")
+# st.markdown("---")
 
-# --- Audio input options ---
-col1, col2 = st.columns([1, 2])
-
-# --- REPLACE YOUR ENTIRE 'with col1:' BLOCK WITH THIS ---
-
-with col1:
-    st.header("Input")
-    input_mode = st.radio("Choose input", ("Upload audio file", "Record from microphone"))
+with st.container(border=True):
+    st.markdown("## Input")
     
-    # --- 1. Show widgets and save path to session state ---
-    if input_mode == "Upload audio file":
-        uploaded_file = st.file_uploader("Upload Hindi audio (wav/mp3)", type=["wav", "mp3", "m4a"])
+    # Tabs for better organization
+    tab1, tab2 = st.tabs(["📤 Upload Audio", "🎙️ Record Audio"])
+    
+    with tab1:
+        st.markdown("##### Upload your Hindi audio file →")
+        uploaded_file = st.file_uploader(
+            "Supported formats: WAV, MP3, M4A",
+            type=["wav", "mp3", "m4a"],
+            help="Upload a clear audio file in Hindi"
+        )
         if uploaded_file is not None:
-            # When file is uploaded, save it and update the state
             tmp_path_upload = save_uploaded_audio(uploaded_file)
             st.session_state["audio_path"] = tmp_path_upload
+            st.success(f"✅ File uploaded: {uploaded_file.name}")
+    
+    with tab2:
+        st.markdown("### Record your voice")
         
-    else: # Record from microphone
-        st.write("🎤 Record from your mic")
-        duration = st.slider("Recording duration (seconds)", 1, 30, 5)
-
-        if st.button("🎙️ Record"):
-            st.info("Recording... please speak now!")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            duration = st.slider(
+                "Recording duration (seconds)",
+                min_value=1,
+                max_value=30,
+                value=5,
+                help="Choose how long to record"
+            )
+        
+        if st.button("🎙️ Start Recording", use_container_width=True):
+            st.info("🔴 Recording in progress... Please speak now!")
             with st.spinner(f"Recording for {duration} seconds..."):
                 recorded_path = record_audio(duration=duration)
-            st.success(f"Saved recording to {recorded_path}")
-            # (Note: No st.audio() here - this fixes the double audio clip)
+            st.success(f"✅ Recording saved successfully!")
             st.session_state["audio_path"] = recorded_path
 
-    # --- 2. Read from state to set tmp_path and show audio player ---
-    # This logic runs *after* the widgets and *before* the "Transcribe" button
-    
-    tmp_path = None  # Default to None
-    
+    # Display audio player
+    tmp_path = None
     if "audio_path" in st.session_state:
-        # Check if the file still exists
         current_path = st.session_state["audio_path"]
         if Path(current_path).exists():
             tmp_path = current_path
-            # This is the *only* place we show the audio player
+            st.markdown("### 🔊 Preview Your Audio")
             st.audio(tmp_path)
         else:
-            # File was deleted or lost, clear the state
             del st.session_state["audio_path"]
 
-    # --- 3. Process button ---
-    if st.button("Transcribe & Respond"):
-
-        if tmp_path is None:
-            st.error("Please upload or record audio first.")
-        else:
-            with st.spinner("Transcribing (Whisper)..."):
-                transcript = transcribe_file(tmp_path)
-            st.success("Transcribed")
-            st.markdown("**Transcribed (Hindi)**")
-            st.write(transcript)
-
-            # Generate response (Ollama or fallback)
-            with st.spinner("Generating response..."):
-                assistant_reply = generate_response(transcript)
-
-            st.markdown("**Assistant (Hindi)**")
-            st.write(assistant_reply)
-
-            # Save chat
-            st.session_state.chats.append({"user": transcript, "assistant": assistant_reply})
-
-            # TTS and play
-            with st.spinner("Converting to speech..."):
-                speak_text(assistant_reply)
-            st.success("Played audio")
-
-# with col1:
-#     st.header("Input")
-#     input_mode = st.radio("Choose input", ("Upload audio file", "Record from microphone"))
-#     uploaded_file = None
-#     recorded_path = None
-
-    # if input_mode == "Upload audio file":
-    #     uploaded_file = st.file_uploader("Upload Hindi audio (wav/mp3)", type=["wav", "mp3", "m4a"])
-    # else:
-    #     st.write("🎤 Record from your mic")
-    #     duration = st.slider("Recording duration (seconds)", 1, 30, 5)
-
-    #     if st.button("🎙️ Record"):
-    #         st.info("Recording... please speak now!")
-    #         with st.spinner(f"Recording for {duration} seconds..."):
-    #             recorded_path = record_audio(duration=duration)
-    #         st.success(f"Saved recording to {recorded_path}")
-    #         st.audio(recorded_path)
-    #         st.session_state["audio_path"] = recorded_path
+# ===== PROCESSING SECTION =====
+with st.container():
     
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # --- Custom styling for Transcribe button ---
+        st.markdown("""
+            <style>
+            div.stButton > button:first-child {
+                background-color: #6C584C;      /* your primary color */
+                color: #F0EAD2;                 /* text color to match theme */
+                font-size: 17px;
+                font-weight: 600;
+                border-radius: 40px;            /* makes it oval */
+                border: none;
+                padding: 0.6em 1.5em;
+                box-shadow: 0px 3px 6px rgba(0,0,0,0.2);
+                transition: all 0.25s ease-in-out;
+            }
+            div.stButton > button:first-child:hover {
+                background-color: #7B6F5E;      /* slightly lighter hover tone */
+                transform: scale(1.03);
+                box-shadow: 0px 5px 10px rgba(0,0,0,0.25);
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
-    # Optionally save uploaded file to temp file for processing
-    # if uploaded_file is not None:
-    #     tmp_path = save_uploaded_audio(uploaded_file)
-    #     st.audio(tmp_path)
-    # elif recorded_path:
-    #     tmp_path = recorded_path
-    #     st.audio(tmp_path)
-    # else:
-    #     tmp_path = None
+        if st.button("🚀 Transcribe & Generate Response", use_container_width=True):
+            if tmp_path is None:
+                st.error("❌ Please upload or record audio first!")
+            else:
+                # Transcription
+                with st.spinner("🎯 Transcribing your audio..."):
+                    transcript = transcribe_file(tmp_path)
+                st.success("✅ Transcription complete!")
+                
+                # Display transcript in a nice box
+                st.markdown("### 📝 Your Message (Transcribed)")
+                st.info(transcript)
 
-    # # Process button
-    # if st.button("Transcribe & Respond"):
+                # Generate response
+                with st.spinner("🤔 Generating intelligent response..."):
+                    assistant_reply = generate_response(transcript)
 
-    #     if tmp_path is None:
-    #         st.error("Please upload or record audio first.")
-    #     else:
-    #         with st.spinner("Transcribing (Whisper)..."):
-    #             transcript = transcribe_file(tmp_path)
-    #         st.success("Transcribed")
-    #         st.markdown("**Transcribed (Hindi)**")
-    #         st.write(transcript)
+                # Display response in a nice box
+                st.markdown("### 🤖 Assistant's Response")
+                st.success(assistant_reply)
 
-    #         # Generate response (Ollama or fallback)
-    #         with st.spinner("Generating response..."):
-    #             assistant_reply = generate_response(transcript)
+                # Save to chat history
+                st.session_state.chats.append({
+                    "user": transcript,
+                    "assistant": assistant_reply
+                })
 
-    #         st.markdown("**Assistant (Hindi)**")
-    #         st.write(assistant_reply)
+                # Text-to-speech
+                with st.spinner("🔊 Converting to speech..."):
+                    speak_text(assistant_reply)
+                st.toast("✅ Audio playback complete!", icon="🔊")
 
-    #         # Save chat
-    #         st.session_state.chats.append({"user": transcript, "assistant": assistant_reply})
+st.markdown("\n")
 
-    #         # TTS and play
-    #         with st.spinner("Converting to speech..."):
-    #             speak_text(assistant_reply)
-    #         st.success("Played audio")
-
-
-
-with col2:
-    st.header("Live Demo / Controls")
-    st.markdown(
-        """
-- The assistant will transcribe Devanagari Hindi and respond in Hindi.
-- Uses Whisper (local) for STT.
-- LLM: Ollama local (if running at localhost:11434). Falls back to rule-based replies if not available.
-- TTS: gTTS (Hindi) + pygame playback.
-"""
-    )
-
-    st.markdown("## Quick examples (try speaking):")
-    st.write("- नमस्ते, आप कैसे हैं?")
-    st.write("- मेरा नाम क्या है?")
-    st.write("- आज मौसम कैसा है?")
+with st.expander("ℹ️ About this Assistant", expanded=False):
+    with st.container(border=True):
+        col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        ##### Features 🎯
+        🎤 Whisper-powered Hindi transcription\n
+        🧠 Ollama LLM for natural responses\n
+        🔊 gTTS Hindi voice output\n
+        👁️ Optional user verification
+        """)
+    
+    with col2:
+        st.markdown("""
+        ##### Try These Examples 💡
+        ‣ *नमस्ते, आप कैसे हैं?*\n
+        ‣ *मेरा नाम क्या है?*\n
+        ‣ *आज मौसम कैसा है?*\n
+        ‣ *मुझे एक कहानी सुनाओ*
+        """)
 
 st.markdown("---")
+st.markdown("<p style='text-align: center; color: #6C584C;'>Crafted with ❤️ | Powered by Llama 3</p>", unsafe_allow_html=True)

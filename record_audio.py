@@ -1,9 +1,7 @@
 # record_audio.py
 import sounddevice as sd
 import wavio
-import numpy as np
 import os
-import time
 
 def record_audio(duration=5, filename="recorded_audio.wav", samplerate=16000):
     """

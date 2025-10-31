@@ -2,21 +2,15 @@
 import os
 import requests
 import json
-import time
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")  # default Ollama local server
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3:latest")
 
-
-# In response.py
-
 def _ollama_available() -> bool:
     try:
-        # --- THE FIX ---
-        # The correct health check is the base URL, not /ping
-        r = requests.get(OLLAMA_URL, timeout=3.0) 
-        # ---------------
         
+        r = requests.get(OLLAMA_URL, timeout=3.0) 
+
         # Check the status code explicitly
         if r.status_code == 200:
             print("--- Ollama server is available (ping successful) ---")
@@ -37,24 +31,21 @@ def query_ollama(prompt: str, model: str = OLLAMA_MODEL, timeout: int = 20) -> s
     """
     Send prompt to local Ollama (if available). Returns text response.
     """
-    
-    # --- FIX 1: Add "stream": False to the payload ---
+
     payload = {"model": model, "prompt": prompt, "max_tokens": 256, "stream": False}
     
     try:
         resp = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=timeout)
         resp.raise_for_status()
         data = resp.json()
-        
-        # --- FIX 2: Look for the "response" key, not "text" ---
+
         if isinstance(data, dict) and "response" in data:
             return data["response"].strip()
-        # --------------------------------------------------------
         
         # if response structure different:
         return json.dumps(data)
     except Exception as e:
-        # It's better to print the error to see what's wrong
+        # print the error to see what's wrong
         print(f"Error querying Ollama: {e}") 
         raise
 
@@ -80,7 +71,6 @@ def generate_response(transcript: str) -> str:
     Main entry: tries Ollama, falls back to rule-based.
     """
     # Preface prompt for Hindi response
-    # prompt = f"Respond in Hindi to the user message below. Be concise.\n\nUser: {transcript}\nAssistant:"
 
     prompt = f"You are a helpful female AI assistant. Respond in Hindi using feminine gender for yourself. Be concise.\n\nUser: {transcript}\nAssistant:"
 

@@ -15,7 +15,9 @@ def check_face_and_show_preview(duration_sec: int = 3):
     start = time.time()
     detected = False
     last_frame = None
-    frame_placeholder = st.empty()  # for live preview
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        frame_placeholder = st.empty() 
 
     while time.time() - start < duration_sec:
         ret, frame = cap.read()
@@ -32,12 +34,10 @@ def check_face_and_show_preview(duration_sec: int = 3):
         # Convert BGR → RGB for Streamlit
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # --- FIX 1: Add 'width' to control size ---
         frame_placeholder.image(frame_rgb, channels="RGB", caption="Face detection preview", width=400)
 
     cap.release()
-    
-    # --- FIX 2: Clear the placeholder after the loop ---
+
     frame_placeholder.empty()
     
     return detected, last_frame
