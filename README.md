@@ -17,7 +17,6 @@ A simple, end-to-end web application that accepts Hindi audio, transcribes it, g
   * **Response Generation (LLM):** **Ollama** running **Llama 3 (8B)** locally for chat responses.
   * **Text-to-Speech (TTS):** **gTTS (Google Text-to-Speech)** for generating the Hindi audio output.
   * **Face Detection:** **OpenCV** (using a pre-trained Haar Cascade model).
-  * **Audio Handling:** **PyAudio** (for mic recording) and **Pygame** (for audio playback).
 
 ## Setup and Run
 
@@ -61,23 +60,19 @@ streamlit run app.py
 
 ## Challenges & Solutions
 
-You're right, my apologies. The prompt complexity is a valid trade-off.
+### Challenge 1: Gender bias
 
-Here are two other *excellent* challenges you definitely solved:
-
-### Challenge 1: Ollama Connection Failing Silently
-
-* **Challenge:** The application always used its fallback "माफ़ कीजिये..." reply, even though the Ollama server was running. The `_ollama_available()` function was returning `False` without any error message, making it impossible to debug.
-* **Solution:** We modified the `_ollama_available` function to include detailed `try...except` blocks with `print` statements. This immediately revealed the true error: a `404 Not Found`. The code was checking for a `/ping` endpoint that didn't exist. The fix was to change the health check URL to the base `/` address, which immediately established a connection.
-
+* **Challenge:** The model was using incorrect gender forms in Hindi responses. 
+* **Solution:** I fixed this by updating the prompt to explicitly enforce feminine grammar (e.g., “कर सकती हूँ”) and adding example responses to guide consistency.
+* 
 ### Challenge 2: Audio File Lost on Rerun
 
 * **Challenge:** After recording an audio, clicking the "Transcribe & Respond" button would fail with a "Please upload or record audio first" error. This was happening because Streamlit reruns the script on every interaction, and the variable holding the `recorded_path` was reset to `None`.
-* **Solution:** We re-architected the audio handling logic to use `st.session_state`. After recording or uploading, the file path is now stored in `st.session_state["audio_path"]`. This state persists across reruns, allowing the "Transcribe" button to reliably find and process the audio file.
+* **Solution:** I re-architected the audio handling logic to use `st.session_state`. After recording or uploading, the file path is now stored in `st.session_state["audio_path"]`. This state persists across reruns, allowing the "Transcribe" button to reliably find and process the audio file.
 
 
 ## Ideas for Improvement
 
   * **Better TTS:** Replace gTTS with a more natural-sounding "neural" voice service, such as **Google Cloud TTS** or **ElevenLabs**, to make the assistant sound less robotic.
-  * **Wake Word:** Implement a "wake word" (e.g., "नमस्ते असिस्टेंट") using a library like `pvporcupine` to start recording automatically.
-  * **Streaming:** Implement streaming for all components (STT, LLM, TTS) so the assistant can listen, think, and speak in real-time without waiting for each step to complete.
+  * **Better UI/UX:** The current Streamlit app works fine, but it’s quite basic. I could redesign it into a more interactive, chat-style interface with mic controls, message history, and a cleaner layout.
+  * **Persistent Sessions:** At the moment, the chat resets every time the app reloads. I could store the conversation history in a database so the assistant remembers past interactions and feels more continuous.
