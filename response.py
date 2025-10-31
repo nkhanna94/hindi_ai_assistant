@@ -4,7 +4,7 @@ import requests
 import json
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")  # default Ollama local server
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3:latest")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:latest")
 
 def _ollama_available() -> bool:
     try:
