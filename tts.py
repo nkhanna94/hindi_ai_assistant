@@ -1,40 +1,28 @@
-# tts.py
 from gtts import gTTS
 import tempfile
-import pygame
-import time
-import os
 
 def speak_text(text: str, lang="hi"):
     """
-    Convert text (Hindi) to speech using gTTS, play it with pygame.
-    Blocks until playback finishes.
+    Convert text (Hindi) to speech using gTTS and save to a temp file.
+    Returns the path to the temporary MP3 file.
+    
+    DOES NOT play the audio.
     """
     if not text:
-        return
-
-    # Save to temp mp3
-    tf = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-    tf.close()
-    mp3_path = tf.name
-
-    tts = gTTS(text=text, lang=lang)
-    tts.save(mp3_path)
+        return None
 
     try:
-        pygame.mixer.init()
-        pygame.mixer.music.load(mp3_path)
-        pygame.mixer.music.play()
-        # wait until finished
-        while pygame.mixer.music.get_busy():
-            time.sleep(0.1)
-    finally:
-        try:
-            pygame.mixer.quit()
-        except Exception:
-            pass
-        # remove tmp file
-        try:
-            os.remove(mp3_path)
-        except Exception:
-            pass
+        # Create a temp file to save the audio
+        tf = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        tf.close()
+        mp3_path = tf.name
+
+        # Generate the speech and save it
+        tts = gTTS(text=text, lang=lang)
+        tts.save(mp3_path)
+        
+        return mp3_path # Return the path to the file
+        
+    except Exception as e:
+        print(f"Error creating TTS file: {e}")
+        return None

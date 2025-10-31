@@ -70,17 +70,24 @@ def generate_response(transcript: str) -> str:
     """
     Main entry: tries Ollama, falls back to rule-based.
     """
-    # Preface prompt for Hindi response
+    prompt = f"""
+    You are a friendly female Hindi AI assistant. 
+    Respond **only in simple, clear, and concise Hindi** using **feminine grammar** (e.g., 'मैं बता सकती हूँ').
+    Keep your tone **polite and conversational**. 
 
-    prompt = f"You are a helpful female AI assistant. Respond in Hindi using feminine gender for yourself. Be concise.\n\nUser: {transcript}\nAssistant:"
+    Example:
+    User: नमस्ते! आप कैसी हैं?
+    Assistant: नमस्ते! मैं बिल्कुल ठीक हूँ, धन्यवाद! आप बताइए, आप कैसे हैं?
+
+    User: {transcript}
+    Assistant:
+    """
 
     if _ollama_available():
         try:
             resp = query_ollama(prompt)
-            # ensure response is Hindi (not enforced)
             return resp.strip()
         except Exception:
-            # fallback
             return rule_based_response(transcript)
     else:
         return rule_based_response(transcript)

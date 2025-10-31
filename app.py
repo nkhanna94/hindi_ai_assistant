@@ -19,7 +19,7 @@ st.sidebar.title("Chat History 📜")
 if st.sidebar.button("Clear chats 🗑️"):
     st.session_state.chats = []
 
-for i, chat in enumerate(reversed(st.session_state.chats)):
+for chat in reversed(st.session_state.chats):
     st.sidebar.markdown(f"**User:** {chat['user']}")
     st.sidebar.markdown(f"**Assistant:** {chat['assistant']}")
     st.sidebar.markdown("---")
@@ -59,7 +59,7 @@ with st.expander("Face Detection (runs once when app starts or when you click)")
 
 # st.markdown("---")
 
-with st.container(border=True):
+with st.container():
     st.markdown("### Provide Input")
     
     # Tabs for better organization
@@ -110,9 +110,7 @@ with st.container(border=True):
 
 # ===== PROCESSING SECTION =====
 with st.container():
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+
         # --- Custom styling for Transcribe button ---
         st.markdown("""
             <style>
@@ -164,7 +162,9 @@ with st.container():
 
                 # Text-to-speech
                 with st.spinner("🔊 Converting to speech..."):
-                    speak_text(assistant_reply)
+                    audio_file_path = speak_text(assistant_reply)
+                if audio_file_path:
+                    st.audio(audio_file_path, autoplay=True)
                 st.toast("✅ Audio playback complete!", icon="🔊")
 
 st.markdown("\n")
