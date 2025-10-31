@@ -1,0 +1,15 @@
+[theme]
+# The main "primary" color for widgets (buttons, sliders, etc.)
+primaryColor = "6c584c"  
+
+# The main background color
+backgroundColor = "#f0ead2"  #background
+
+# The background for elements like sidebar, expanders, etc.
+secondaryBackgroundColor = "#c2b8a9"
+
+# The color for all text
+textColor = "43281c"
+
+# Font type
+font = "serif"
